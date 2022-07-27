@@ -41,7 +41,7 @@ const cookie_recv = function (url, xhr) {
             const cookie = tough.Cookie.parse(cookies[i], url);
             cookieJar.setCookieSync(cookie, url.href);
             if (xhr.debug)
-                console.log("XMLHttpRequest-Cookie: received cookie: ", url.toString(), " : ", cookie);
+                console.log("XMLHttpRequest-Cookie: received cookie: ", cookie);
         }
     }
     xhr.setDisableHeaderCheck(false);

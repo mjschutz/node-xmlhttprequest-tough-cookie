@@ -25,44 +25,41 @@
 */
 
 /*  external requirements  */
-var Url = require("url");
-var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
-
-/*  internal requirements  */
-var Cookie    = require("./xmlhttprequest-cookie-obj");
-var CookieJar = require("./xmlhttprequest-cookie-jar");
+const Url = require("url");
+const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+const tough = require('tough-cookie');
 
 /*  create singleton cookie jar  */
-var cookieJar = new CookieJar();
+const cookieJar = new tough.CookieJar();
 
 /*  receive cookies via HTTP "Set-Cookie" header(s)  */
-var cookie_recv = function (url, xhr) {
+const cookie_recv = function (url, xhr) {
     xhr.setDisableHeaderCheck(true);
-    var cookies = xhr.getResponseHeader("Set-Cookie");
+    const cookies = xhr.getResponseHeader("Set-Cookie");
     if (typeof cookies === "object" && cookies !== null && cookies.length > 0) {
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = Cookie.build(cookies[i], url);
-            cookieJar.insert(cookie);
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = tough.Cookie.parse(cookies[i], url);
+            cookieJar.setCookieSync(cookie, url.href);
             if (xhr.debug)
-                console.log("XMLHttpRequest-Cookie: received cookie: ", cookie);
+                console.log("XMLHttpRequest-Cookie: received cookie: ", url.toString(), " : ", cookie);
         }
     }
     xhr.setDisableHeaderCheck(false);
 };
 
 /*  send cookies via HTTP "Cookie" header  */
-var cookie_send = function (url, xhr) {
+const cookie_send = function (url, xhr) {
     xhr.setDisableHeaderCheck(true);
-    var cookie = xhr.getRequestHeader("Cookie") || "";
-    var cookies = cookieJar.findFuzzy(url.hostname, url.pathname);
-    for (var i = 0; i < cookies.length; i++) {
+    let cookie = xhr.getRequestHeader("Cookie") || "";
+    const cookies = cookieJar.getCookiesSync(url.href);
+    for (let i = 0; i < cookies.length; i++) {
         if (cookies[i].secure && url.protocol !== "https:")
             continue;
-        if (cookies[i].httponly && url.protocol.match(/^https?:$/i) === null)
+        if (cookies[i].httpOnly && url.protocol.match(/^https?:$/i) === null)
             continue;
         if (cookie !== "")
             cookie += "; ";
-        cookie += cookies[i].name + "=" + cookies[i].value;
+        cookie += cookies[i].key + "=" + cookies[i].value;
     }
     if (cookie !== "") {
         if (xhr.debug)
@@ -73,20 +70,21 @@ var cookie_send = function (url, xhr) {
 };
 
 /*  define XMLHttpRequest wrapper constructor  */
-var XMLHttpRequestWrapper = function () {
+const XMLHttpRequestWrapper = function () {
     /*  create object with original constructor  */
-    var xhr = new XMLHttpRequest();
+    const xhr = new XMLHttpRequest();
 
     /*  intercept "open" method to gather URL  */
-    var url = null;
-    var open_orig = xhr.open;
+    let url = null;
+    const open_orig = xhr.open;
     xhr.open = function () {
         url = Url.parse(arguments[1]);
         return open_orig.apply(xhr, arguments);
     };
+    
 
     /*  hook into the processing  */
-    var openedOnce = false;
+    let openedOnce = false;
     xhr.addEventListener("readystatechange", function () {
         switch (xhr.readyState) {
             case this.OPENED:
@@ -114,4 +112,3 @@ module.exports = {
     XMLHttpRequest: XMLHttpRequestWrapper,
     CookieJar: cookieJar
 };
-

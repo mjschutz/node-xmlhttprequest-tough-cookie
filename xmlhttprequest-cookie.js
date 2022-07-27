@@ -30,9 +30,10 @@ const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const tough = require('tough-cookie');
 
 /*  create singleton cookie jar  */
-let cookieJar = new tough.CookieJar();
-
-const setCookieJarStore = function (store) { cookieJar = new tough.CookieJar(store); }
+const cookieJar = {
+	jar: new tough.CookieJar(),
+	setStore: function (store) { this.jar = this.jar.cloneSync(store); }
+}
 
 /*  receive cookies via HTTP "Set-Cookie" header(s)  */
 const cookie_recv = function (url, xhr) {
@@ -41,7 +42,7 @@ const cookie_recv = function (url, xhr) {
     if (typeof cookies === "object" && cookies !== null && cookies.length > 0) {
         for (let i = 0; i < cookies.length; i++) {
             const cookie = tough.Cookie.parse(cookies[i], url);
-            cookieJar.setCookieSync(cookie, url.href);
+            cookieJar.jar.setCookieSync(cookie, url.href);
             if (xhr.debug)
                 console.log("XMLHttpRequest-Cookie: received cookie: ", cookie);
         }
@@ -53,7 +54,7 @@ const cookie_recv = function (url, xhr) {
 const cookie_send = function (url, xhr) {
     xhr.setDisableHeaderCheck(true);
     let cookie = xhr.getRequestHeader("Cookie") || "";
-    const cookies = cookieJar.getCookiesSync(url.href);
+    const cookies = cookieJar.jar.getCookiesSync(url.href);
     for (let i = 0; i < cookies.length; i++) {
         if (cookies[i].secure && url.protocol !== "https:")
             continue;
@@ -112,6 +113,5 @@ const XMLHttpRequestWrapper = function () {
 /*  export XMLHttpRequest wrapper constructor and the cookie jar  */
 module.exports = {
     XMLHttpRequest: XMLHttpRequestWrapper,
-    CookieJar: cookieJar,
-    setCookieJarStore
+    CookieJar: cookieJar
 };

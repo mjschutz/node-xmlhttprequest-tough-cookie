@@ -1,3 +1,4 @@
+Notice: This is a modified version to make use of tought-cookie, so the cookies can be shared with [fetch-cookie](https://github.com/valeriangalliat/fetch-cookie) and work with [file-cookie-store](https://github.com/therootcompany/file-cookie-store)
 
 Node XMLHttpRequest-Cookie
 ==========================

@@ -30,7 +30,9 @@ const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const tough = require('tough-cookie');
 
 /*  create singleton cookie jar  */
-const cookieJar = new tough.CookieJar();
+let cookieJar = new tough.CookieJar();
+
+const setCookieJarStore = function (store) { cookieJar = new tough.CookieJar(store); }
 
 /*  receive cookies via HTTP "Set-Cookie" header(s)  */
 const cookie_recv = function (url, xhr) {
@@ -110,5 +112,6 @@ const XMLHttpRequestWrapper = function () {
 /*  export XMLHttpRequest wrapper constructor and the cookie jar  */
 module.exports = {
     XMLHttpRequest: XMLHttpRequestWrapper,
-    CookieJar: cookieJar
+    CookieJar: cookieJar,
+    setCookieJarStore
 };
